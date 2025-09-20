@@ -92,3 +92,71 @@ export interface SendMessageRequest {
   attachments?: File[];
   attachmentScope?: 'project' | 'conversation';
 }
+
+// Thread-related types for the new Project Threads API
+export interface ThreadInfo {
+  threadId: string;
+  createdAt: string;
+  lastActivityAt?: string;
+  messageCount: number;
+  firstMessage?: string;
+  lastMessage?: string;
+  isActive: boolean;
+  projectId: string;
+}
+
+export interface ThreadListResponse {
+  threads: ThreadInfo[];
+  projectId: string;
+  hasMore: boolean;
+  limit: number;
+  nextCursor?: string;
+  previousCursor?: string;
+  order?: string;
+}
+
+export interface ThreadListRequest {
+  teamId: string;
+  projectId: string;
+  limit?: number;
+  order?: 'asc' | 'desc';
+  after?: string;
+  before?: string;
+}
+
+// Thread message and detail types for thread detail view
+export interface ThreadMessage {
+  messageId: string;
+  content: string;
+  role: 'user' | 'assistant' | 'system';
+  createdAt: string;
+  userId?: string;
+  metadata?: string;
+}
+
+export interface ThreadDetailResponse {
+  thread: ThreadInfo;
+  messages: ThreadMessage[];
+  projectId: string;
+}
+
+// Thread run types for continuing existing conversations
+export interface RunRequest {
+  message: string;
+  instructions?: string;
+}
+
+export interface RunResponse {
+  runId: string;
+  threadId: string;
+  status: RunStatus;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  assistantId: string;
+  projectId: string;
+  instructions?: string;
+  userMessage: string;
+}
+
+export type RunStatus = 'queued' | 'in_progress' | 'completed' | 'failed' | 'expired';

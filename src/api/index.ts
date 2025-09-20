@@ -6,3 +6,5 @@ export * from './projects';
 export * from './users';
 export * from './documents';
 export * from './chat';
+export * from './threads';
+export * from './runs';

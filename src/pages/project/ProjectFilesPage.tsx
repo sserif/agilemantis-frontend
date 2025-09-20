@@ -530,8 +530,8 @@ const ProjectFilesPage: React.FC = () => {
       />
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {files.length} documents {searchQuery && files.length !== documents.length && `(filtered from ${documents.length})`}
           </span>

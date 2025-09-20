@@ -25,7 +25,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
 
   const getTabClasses = (tab: string) => {
     const isActive = currentTab === tab;
-    return `px-4 py-2 text-sm font-medium rounded-lg ${
+    return `px-3 py-1.5 text-sm font-medium rounded-lg ${
       isActive
         ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900'
         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -37,11 +37,11 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   const displayDescription = pageDescription || project.description;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Project Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-3">
             <div className="w-16 h-16 bg-primary-600 rounded-lg flex items-center justify-center text-white text-2xl font-bold">
               {project.name.charAt(0)}
             </div>
@@ -52,7 +52,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {displayDescription}
               </p>
-              <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center space-x-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
                 <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
                   active
                 </span>
@@ -66,7 +66,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {actionButton && (
               <div>{actionButton}</div>
             )}
@@ -84,7 +84,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
       </div>
 
       {/* Quick Navigation */}
-      <div className="flex space-x-4">
+      <div className="flex space-x-2">
         <Link
           to={`/teams/${teamId}/projects/${projectId}`}
           className={getTabClasses('overview')}

@@ -60,8 +60,8 @@ const ProjectMembersPage: React.FC = () => {
 
       {/* Members List */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="p-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
             Members ({members.length})
           </h2>
 
@@ -123,8 +123,8 @@ const ProjectMembersPage: React.FC = () => {
 
       {/* Invite Members Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="p-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
             Invite New Members
           </h2>
 

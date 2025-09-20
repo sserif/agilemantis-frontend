@@ -141,8 +141,8 @@ const ProjectPage: React.FC = () => {
         currentTab="overview" 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">{/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">{/* Main Content */}
+        <div className="lg:col-span-2 space-y-4">
           {/* Recent Activity */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
@@ -218,9 +218,9 @@ const ProjectPage: React.FC = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Project Stats */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
               Project Stats
             </h3>
