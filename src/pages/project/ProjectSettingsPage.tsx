@@ -1,20 +1,43 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useProject } from '../../context/ProjectContext';
+import { useTeam } from '../../context/TeamContext';
+import LoadingIndicator from '../../components/common/LoadingIndicator';
 
 const ProjectSettingsPage: React.FC = () => {
-  const { teamId, projectId } = useParams();
+  const { teamId, projectId } = useParams<{ teamId: string; projectId: string }>();
+  const { projects, fetchProjects, isLoading: projectsLoading } = useProject();
+  const { teams } = useTeam();
 
-  // TODO: Use teamId and projectId for API calls when backend is implemented
-  console.log('Project Settings Page - Team ID:', teamId, 'Project ID:', projectId);
+  // Find the current project
+  const project = projects.find(p => p.id === projectId && p.teamId === teamId);
+  const team = teams.find(t => t.id === teamId);
 
-  // Mock project data
-  const project = {
-    name: 'Sample Project',
-    description: 'This is a sample project for demonstration purposes.',
-    visibility: 'private',
-    createdAt: '2024-01-15',
-    updatedAt: '2024-02-20'
-  };
+  // Load projects for this team if not already loaded
+  useEffect(() => {
+    if (teamId && (!projects.some(p => p.teamId === teamId))) {
+      fetchProjects(teamId);
+    }
+  }, [teamId, projects]); // Removed fetchProjects from dependencies
+
+  if (projectsLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <LoadingIndicator size="lg" text="Loading project settings..." />
+      </div>
+    );
+  }
+
+  if (!project || !team) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Project not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The project you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -63,7 +86,7 @@ const ProjectSettingsPage: React.FC = () => {
                 Visibility
               </label>
               <select
-                defaultValue={project.visibility}
+                defaultValue="private"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="private">Private</option>

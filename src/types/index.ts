@@ -4,6 +4,7 @@ export * from './user';
 export * from './team';
 export * from './project';
 export * from './api';
+export * from './chat';
 
 // Common utility types
 export type Status = 'idle' | 'loading' | 'success' | 'error';

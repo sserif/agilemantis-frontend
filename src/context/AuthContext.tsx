@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import type { User } from '../types/user';
+import { authApi } from '../api/auth';
 
 // Auth State Types
 export interface AuthState {
@@ -16,6 +17,7 @@ export interface AuthContextType extends AuthState {
   logout: () => void;
   clearError: () => void;
   refreshToken: () => Promise<void>;
+  onLoginSuccess?: () => Promise<void>; // Callback for after successful login
 }
 
 // Auth Actions
@@ -124,33 +126,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'AUTH_START' });
 
     try {
-      // TODO: Replace with actual Auth0 integration
-      // This is a placeholder implementation
-      console.log('Login attempt:', email, 'Password length:', password.length);
+      console.log('Attempting login with API...');
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock successful login
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        picture: 'https://via.placeholder.com/100',
-        roles: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const mockToken = 'mock-jwt-token-' + Date.now();
+      // Call actual API
+      const response = await authApi.login({ email, password });
+      const { user, token } = response.data;
 
       // Store in localStorage
-      localStorage.setItem('authToken', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: { user: mockUser, token: mockToken }
+        payload: { user, token }
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
@@ -160,37 +148,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Register function
-  const register = async (email: string, _password: string, name: string): Promise<void> => {
+  const register = async (email: string, password: string, name: string): Promise<void> => {
     dispatch({ type: 'AUTH_START' });
 
     try {
-      // TODO: Replace with actual Auth0 integration
-      // This is a placeholder implementation
-      console.log('Register attempt:', email, name);
+      console.log('Attempting registration with API...');
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock successful registration
-      const mockUser: User = {
-        id: '2',
-        email,
-        name,
-        picture: 'https://via.placeholder.com/100',
-        roles: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const mockToken = 'mock-jwt-token-' + Date.now();
+      // Call actual API
+      const response = await authApi.register({ email, password, name });
+      const { user, token } = response.data;
 
       // Store in localStorage
-      localStorage.setItem('authToken', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: { user: mockUser, token: mockToken }
+        payload: { user, token }
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';

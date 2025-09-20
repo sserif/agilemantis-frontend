@@ -1,58 +1,44 @@
 import { Link, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useTeam } from '../../context/TeamContext';
+import { useProject } from '../../context/ProjectContext';
 import LoadingIndicator from '../../components/common/LoadingIndicator';
 
 const TeamPage: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
-  const isLoading = false;
+  const { teams } = useTeam();
+  const { projects, fetchProjects, isLoading: projectsLoading } = useProject();
 
-  // Placeholder team data
-  const team = {
-    id: teamId,
-    name: 'Development Team',
-    description: 'Main development team for web applications and mobile apps',
-    memberCount: 8,
-    projectCount: 3,
-    createdAt: '2024-01-15',
-    owner: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      picture: null,
-    },
-  };
+  // Find the current team from teams context
+  const team = teams.find(t => t.id === teamId);
+  
+  // Load projects for this team
+  useEffect(() => {
+    if (teamId) {
+      fetchProjects(teamId);
+    }
+  }, [teamId]); // Removed fetchProjects from dependencies
 
-  // Placeholder projects data
-  const projects = [
-    {
-      id: '1',
-      name: 'Project Alpha',
-      description: 'Main web application development project',
-      memberCount: 5,
-      lastActivity: '2 hours ago',
-      status: 'active',
-    },
-    {
-      id: '2',
-      name: 'Mobile App Beta',
-      description: 'Cross-platform mobile application',
-      memberCount: 3,
-      lastActivity: '1 day ago',
-      status: 'active',
-    },
-    {
-      id: '3',
-      name: 'API Gateway',
-      description: 'Microservices API gateway implementation',
-      memberCount: 4,
-      lastActivity: '3 days ago',
-      status: 'planning',
-    },
-  ];
+  const isLoading = projectsLoading;
+
+  // Get projects for this team
+  const teamProjects = projects.filter(p => p.teamId === teamId);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <LoadingIndicator size="lg" text="Loading team..." />
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Team not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The team you're looking for doesn't exist.</p>
+        </div>
       </div>
     );
   }
@@ -74,11 +60,9 @@ const TeamPage: React.FC = () => {
                 {team.description}
               </p>
               <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
-                <span>{team.memberCount} members</span>
+                <span>{team.members?.length || 0} members</span>
                 <span>•</span>
-                <span>{team.projectCount} projects</span>
-                <span>•</span>
-                <span>Created {new Date(team.createdAt).toLocaleDateString()}</span>
+                <span>{teamProjects.length} projects</span>
               </div>
             </div>
           </div>
@@ -133,7 +117,7 @@ const TeamPage: React.FC = () => {
           </button>
         </div>
 
-        {projects.length === 0 ? (
+        {teamProjects.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -151,7 +135,7 @@ const TeamPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {projects.map((project) => (
+            {teamProjects.map((project) => (
               <Link
                 key={project.id}
                 to={`/teams/${teamId}/projects/${project.id}`}
@@ -166,23 +150,20 @@ const TeamPage: React.FC = () => {
                       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400">
                         {project.name}
                       </h3>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${project.status === 'active'
-                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                        : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                        }`}>
-                        {project.status}
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                        active
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                  {project.description}
+                  {project.description || 'No description available'}
                 </p>
 
                 <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                  <span>{project.memberCount} members</span>
-                  <span>Active {project.lastActivity}</span>
+                  <span>{project.members?.length || 0} members</span>
+                  <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
                 </div>
               </Link>
             ))}

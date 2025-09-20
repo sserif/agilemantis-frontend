@@ -34,7 +34,7 @@ export class HttpError extends Error {
 // Create Axios instance with base configuration
 const axiosInstance = axios.create({
   baseURL: env.apiBaseUrl,
-  timeout: 10000,
+  timeout: 60000, // 60 seconds - increased for chat responses
   headers: {
     'Content-Type': 'application/json',
   },
@@ -43,15 +43,32 @@ const axiosInstance = axios.create({
 // Request interceptor to add authentication token
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('authToken');
+    console.log('🔍 INTERCEPTOR CALLED - Starting token check...');
+    
+    // Get ID token from localStorage (will be set by Auth0Context)
+    const token = localStorage.getItem('auth0_id_token');
+    console.log('API client token check:', { 
+      hasToken: !!token, 
+      tokenPreview: token ? token.substring(0, 50) + '...' : null,
+      localStorageKeys: Object.keys(localStorage)
+    });
+    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('✅ Authorization header set with Bearer token');
+    } else {
+      console.warn('❌ No ID token found or no headers object', {
+        hasToken: !!token,
+        hasHeaders: !!config.headers
+      });
     }
 
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
       data: config.data,
       params: config.params,
+      hasToken: !!token,
+      authHeader: config.headers?.Authorization ? 'Set' : 'Not set',
+      allHeaders: config.headers,
     });
 
     return config;

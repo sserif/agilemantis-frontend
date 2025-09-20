@@ -1,5 +1,6 @@
-import { createContext, useContext, useReducer, ReactNode } from 'react';
-import type { Project, ProjectMember } from '../types/project';
+import { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
+import type { Project, ProjectMember, ProjectRole } from '../types/project';
+import { projectsApi } from '../api/projects';
 
 // Project State Types
 export interface ProjectState {
@@ -15,9 +16,9 @@ export interface ProjectContextType extends ProjectState {
   createProject: (teamId: string, projectData: Partial<Project>) => Promise<Project>;
   updateProject: (projectId: string, projectData: Partial<Project>) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
-  addMember: (projectId: string, userId: string, role: 'owner' | 'contributor' | 'reader') => Promise<void>;
+  addMember: (projectId: string, userId: string, role: ProjectRole) => Promise<void>;
   removeMember: (projectId: string, userId: string) => Promise<void>;
-  updateMemberRole: (projectId: string, userId: string, role: 'owner' | 'contributor' | 'reader') => Promise<void>;
+  updateMemberRole: (projectId: string, userId: string, role: ProjectRole) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   clearError: () => void;
 }
@@ -28,13 +29,14 @@ type ProjectAction =
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SET_PROJECTS'; payload: Project[] }
+  | { type: 'ADD_TEAM_PROJECTS'; payload: { teamId: string; projects: Project[] } }
   | { type: 'SET_CURRENT_PROJECT'; payload: Project | null }
   | { type: 'ADD_PROJECT'; payload: Project }
   | { type: 'UPDATE_PROJECT'; payload: { projectId: string; projectData: Partial<Project> } }
   | { type: 'REMOVE_PROJECT'; payload: string }
   | { type: 'ADD_MEMBER'; payload: { projectId: string; member: ProjectMember } }
   | { type: 'REMOVE_MEMBER'; payload: { projectId: string; userId: string } }
-  | { type: 'UPDATE_MEMBER_ROLE'; payload: { projectId: string; userId: string; role: 'owner' | 'contributor' | 'reader' } };
+  | { type: 'UPDATE_MEMBER_ROLE'; payload: { projectId: string; userId: string; role: ProjectRole } };
 
 // Initial State
 const initialState: ProjectState = {
@@ -67,6 +69,14 @@ function projectReducer(state: ProjectState, action: ProjectAction): ProjectStat
       return {
         ...state,
         projects: action.payload,
+        isLoading: false,
+      };
+    case 'ADD_TEAM_PROJECTS':
+      // Remove existing projects for this team and add new ones
+      const filteredProjects = state.projects.filter(p => p.teamId !== action.payload.teamId);
+      return {
+        ...state,
+        projects: [...filteredProjects, ...action.payload.projects],
         isLoading: false,
       };
     case 'SET_CURRENT_PROJECT':
@@ -160,94 +170,57 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
 
   // Fetch projects function
-  const fetchProjects = async (teamId?: string): Promise<void> => {
+  const fetchProjects = useCallback(async (teamId?: string): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     try {
-      // TODO: Replace with actual API call
       console.log('Fetching projects for team:', teamId);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!teamId) {
+        console.warn('No teamId provided for fetchProjects');
+        dispatch({ type: 'SET_PROJECTS', payload: [] });
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return;
+      }
 
-      // Mock projects data
-      const mockProjects: Project[] = [
-        {
-          id: '1',
-          name: 'Frontend Redesign',
-          description: 'Complete redesign of the frontend application',
-          teamId: teamId || '1',
-          ownerId: '1',
-          members: [],
-          files: [],
-          agentContext: {
-            systemPrompt: 'Frontend development assistant',
-            instructions: 'Help with React, TypeScript, and CSS development',
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          name: 'API Integration',
-          description: 'Integration with third-party APIs',
-          teamId: teamId || '1',
-          ownerId: '1',
-          members: [],
-          files: [],
-          agentContext: {
-            systemPrompt: 'API integration assistant',
-            instructions: 'Help with REST API integration and backend services',
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ];
+      // Call actual API
+      const response = await projectsApi.getProjects(teamId);
+      console.log('ProjectContext: Projects API response:', response);
+      
+      // Handle response data extraction (similar to teams)
+      const projects = Array.isArray(response) ? response : response.data || response || [];
+      console.log('ProjectContext: Extracted projects:', projects);
 
-      dispatch({ type: 'SET_PROJECTS', payload: mockProjects });
+      dispatch({ type: 'ADD_TEAM_PROJECTS', payload: { teamId, projects } });
     } catch (error) {
+      console.error('ProjectContext: Failed to fetch projects:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
-  };
+  }, []);
 
   // Fetch project function
   const fetchProject = async (projectId: string): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     try {
-      // TODO: Replace with actual API call
       console.log('Fetching project:', projectId);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Find project from existing projects or create mock
+      // First try to find project in current state
       const existingProject = state.projects.find(project => project.id === projectId);
       if (existingProject) {
         dispatch({ type: 'SET_CURRENT_PROJECT', payload: existingProject });
-      } else {
-        // Mock project if not found
-        const mockProject: Project = {
-          id: projectId,
-          name: `Project ${projectId}`,
-          description: 'Mock project data',
-          teamId: '1',
-          ownerId: '1',
-          members: [],
-          files: [],
-          agentContext: {
-            systemPrompt: 'General project assistant',
-            instructions: 'Help with project management and development',
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        dispatch({ type: 'SET_CURRENT_PROJECT', payload: mockProject });
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return;
       }
 
+      // If not found locally, we would need teamId to fetch from API
+      // For now, just set error since we need teamId for the API call
+      console.warn('Project not found in local state and no teamId provided for API call');
+      dispatch({ type: 'SET_CURRENT_PROJECT', payload: null });
       dispatch({ type: 'SET_LOADING', payload: false });
     } catch (error) {
+      console.error('ProjectContext: Failed to fetch project:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch project';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
@@ -271,7 +244,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         teamId,
         ownerId: '1', // TODO: Get from auth context
         members: [],
-        files: [],
+        documents: [],
         agentContext: {
           systemPrompt: 'Project assistant',
           instructions: 'Help with project development and management',
@@ -327,7 +300,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   };
 
   // Add member function
-  const addMember = async (projectId: string, userId: string, role: 'owner' | 'contributor' | 'reader'): Promise<void> => {
+  const addMember = async (projectId: string, userId: string, role: ProjectRole): Promise<void> => {
     try {
       // TODO: Replace with actual API call
       console.log('Adding member to project:', projectId, userId, role);
@@ -375,7 +348,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   };
 
   // Update member role function
-  const updateMemberRole = async (projectId: string, userId: string, role: 'owner' | 'contributor' | 'reader'): Promise<void> => {
+  const updateMemberRole = async (projectId: string, userId: string, role: ProjectRole): Promise<void> => {
     try {
       // TODO: Replace with actual API call
       console.log('Updating member role:', projectId, userId, role);

@@ -7,10 +7,11 @@ import {
 
 // Layout components (not lazy loaded for immediate rendering)
 import AppLayout from '../components/layout/AppLayout';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
 
 // Lazy loaded page components
 const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
+const CallbackPage = lazy(() => import('../pages/auth/CallbackPage'));
 const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage'));
 const TeamPage = lazy(() => import('../pages/team/TeamPage'));
 const TeamMembersPage = lazy(() => import('../pages/team/TeamMembersPage'));
@@ -33,12 +34,16 @@ const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: '/register',
-    element: <RegisterPage />,
+    path: '/callback',
+    element: <CallbackPage />,
   },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         path: 'dashboard',

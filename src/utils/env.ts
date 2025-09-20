@@ -3,7 +3,7 @@ interface EnvironmentConfig {
   apiBaseUrl: string;
   auth0Domain: string;
   auth0ClientId: string;
-  auth0Audience: string;
+  auth0Audience?: string;
   auth0RedirectUri: string;
   environment: 'development' | 'production' | 'test';
   logLevel: 'debug' | 'info' | 'warn' | 'error';
@@ -15,10 +15,10 @@ class Environment {
   constructor() {
     this.config = {
       appTitle: this.getEnvVar('VITE_APP_TITLE', 'Agile Mantis'),
-      apiBaseUrl: this.getEnvVar('VITE_API_BASE_URL', 'http://localhost:7071/api'),
+      apiBaseUrl: this.getEnvVar('VITE_API_BASE_URL', 'https://mantis-api.azurewebsites.net/api'),
       auth0Domain: this.getEnvVar('VITE_AUTH0_DOMAIN'),
       auth0ClientId: this.getEnvVar('VITE_AUTH0_CLIENT_ID'),
-      auth0Audience: this.getEnvVar('VITE_AUTH0_AUDIENCE'),
+      auth0Audience: this.getOptionalEnvVar('VITE_AUTH0_AUDIENCE'),
       auth0RedirectUri: this.getEnvVar('VITE_AUTH0_REDIRECT_URI', 'http://localhost:5173/callback'),
       environment: this.getEnvVar('VITE_ENVIRONMENT', 'development') as EnvironmentConfig['environment'],
       logLevel: this.getEnvVar('VITE_LOG_LEVEL', 'info') as EnvironmentConfig['logLevel'],
@@ -35,11 +35,14 @@ class Environment {
     return value;
   }
 
+  private getOptionalEnvVar(key: string): string | undefined {
+    return import.meta.env[key] || undefined;
+  }
+
   private validateRequiredVars(): void {
     const requiredVars = [
       'auth0Domain',
       'auth0ClientId',
-      'auth0Audience',
     ];
 
     const missing = requiredVars.filter(key => !this.config[key as keyof EnvironmentConfig]);
@@ -70,7 +73,7 @@ class Environment {
     return this.config.auth0ClientId;
   }
 
-  get auth0Audience(): string {
+  get auth0Audience(): string | undefined {
     return this.config.auth0Audience;
   }
 

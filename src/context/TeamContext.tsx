@@ -1,5 +1,6 @@
-import { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useCallback } from 'react';
 import type { Team, TeamMember } from '../types/team';
+import { teamsApi } from '../api/teams';
 
 // Team State Types
 export interface TeamState {
@@ -64,6 +65,7 @@ function teamReducer(state: TeamState, action: TeamAction): TeamState {
         error: null,
       };
     case 'SET_TEAMS':
+      console.log('TeamContext reducer: SET_TEAMS action received', action.payload);
       return {
         ...state,
         teams: action.payload,
@@ -160,77 +162,44 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(teamReducer, initialState);
 
   // Fetch teams function
-  const fetchTeams = async (): Promise<void> => {
+  const fetchTeams = useCallback(async (): Promise<void> => {
+    console.log('🚀 TeamContext: fetchTeams called - starting execution');
     dispatch({ type: 'SET_LOADING', payload: true });
 
     try {
-      // TODO: Replace with actual API call
-      console.log('Fetching teams...');
+      console.log('Fetching teams from API...');
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call actual API
+      const response = await teamsApi.getTeams();
+      console.log('TeamContext: Full API response:', response);
+      console.log('TeamContext: response.data:', response.data);
+      console.log('TeamContext: typeof response.data:', typeof response.data);
+      
+      // The server returns the array directly, not wrapped in a data property
+      const teams = Array.isArray(response) ? response : response.data || response;
+      console.log('TeamContext: Extracted teams:', teams);
 
-      // Mock teams data
-      const mockTeams: Team[] = [
-        {
-          id: '1',
-          name: 'Development Team',
-          description: 'Main development team for the project',
-          ownerId: '1',
-          members: [],
-          projects: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          name: 'Design Team',
-          description: 'UI/UX design team',
-          ownerId: '1',
-          members: [],
-          projects: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ];
-
-      dispatch({ type: 'SET_TEAMS', payload: mockTeams });
+      console.log('TeamContext: Setting teams in context:', teams);
+      dispatch({ type: 'SET_TEAMS', payload: teams });
+      console.log('TeamContext: SET_TEAMS action dispatched');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch teams';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
-  };
+  }, []);
 
   // Fetch team function
   const fetchTeam = async (teamId: string): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     try {
-      // TODO: Replace with actual API call
       console.log('Fetching team:', teamId);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Call actual API
+      const response = await teamsApi.getTeam(teamId);
+      const team = response.data;
 
-      // Find team from existing teams or create mock
-      const existingTeam = state.teams.find(team => team.id === teamId);
-      if (existingTeam) {
-        dispatch({ type: 'SET_CURRENT_TEAM', payload: existingTeam });
-      } else {
-        // Mock team if not found
-        const mockTeam: Team = {
-          id: teamId,
-          name: `Team ${teamId}`,
-          description: 'Mock team data',
-          ownerId: '1',
-          members: [],
-          projects: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        dispatch({ type: 'SET_CURRENT_TEAM', payload: mockTeam });
-      }
-
+      dispatch({ type: 'SET_CURRENT_TEAM', payload: team });
       dispatch({ type: 'SET_LOADING', payload: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch team';
@@ -243,23 +212,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     try {
-      // TODO: Replace with actual API call
       console.log('Creating team:', teamData);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newTeam: Team = {
-        id: Date.now().toString(),
+      // Call actual API
+      const response = await teamsApi.createTeam({
         name: teamData.name || 'New Team',
-        description: teamData.description || '',
-        ownerId: '1', // TODO: Get from auth context
-        members: [],
-        projects: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        ...teamData,
-      };
+        description: teamData.description
+      });
+      const newTeam = response.data;
 
       dispatch({ type: 'ADD_TEAM', payload: newTeam });
       dispatch({ type: 'SET_LOADING', payload: false });

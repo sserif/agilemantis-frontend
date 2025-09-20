@@ -1,9 +1,21 @@
-import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTeam } from '../../context/TeamContext';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { teams = [] } = useTeam(); // Default to empty array
+  
+  // Debug logging
+  console.log('Sidebar teams data:', { 
+    teams, 
+    teamsLength: teams?.length, 
+    firstTeam: teams?.[0]
+  });
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -28,12 +40,6 @@ const Sidebar: React.FC = () => {
         </svg>
       ),
     },
-  ];
-
-  // Placeholder teams data
-  const teams = [
-    { id: '1', name: 'Development Team', projectCount: 3 },
-    { id: '2', name: 'Design Team', projectCount: 2 },
   ];
 
   const isActive = (href: string) => {
@@ -95,7 +101,7 @@ const Sidebar: React.FC = () => {
               </button>
             </div>
             <ul className="space-y-1 mt-2">
-              {teams.map((team) => (
+              {teams && teams.length > 0 ? teams.map((team) => (
                 <li key={team.id}>
                   <Link
                     to={`/teams/${team.id}`}
@@ -112,46 +118,17 @@ const Sidebar: React.FC = () => {
                         <p className="text-sm font-medium truncate">
                           {team.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {team.projectCount} projects
-                        </p>
                       </div>
                     </div>
                   </Link>
                 </li>
-              ))}
+              )) : (
+                <li className="text-center py-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">No teams yet</p>
+                </li>
+              )}
             </ul>
           </div>
-
-          {/* Projects Section for Current Team */}
-          {location.pathname.startsWith('/teams/') && (
-            <div className="mt-6">
-              <div className="flex items-center justify-between px-2 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                  Projects
-                </h3>
-                <button className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"></path>
-                  </svg>
-                </button>
-              </div>
-              <ul className="space-y-1 mt-2">
-                {/* Placeholder projects */}
-                <li>
-                  <Link
-                    to="/teams/1/projects/1"
-                    className="flex items-center p-2 text-sm text-gray-700 rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <div className="w-6 h-6 bg-primary-600 rounded text-white text-xs flex items-center justify-center mr-3">
-                      P
-                    </div>
-                    <span>Project Alpha</span>
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          )}
         </div>
       </aside>
     </>

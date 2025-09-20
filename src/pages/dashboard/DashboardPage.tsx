@@ -1,37 +1,10 @@
 import { Link } from 'react-router-dom';
 import LoadingIndicator from '../../components/common/LoadingIndicator';
+import { useTeam } from '../../context/TeamContext';
 
 const DashboardPage: React.FC = () => {
-  // Placeholder loading state
-  const isLoading = false;
-
-  // Placeholder teams data
-  const teams = [
-    {
-      id: '1',
-      name: 'Development Team',
-      description: 'Main development team for web applications',
-      memberCount: 8,
-      projectCount: 3,
-      lastActivity: '2 hours ago',
-    },
-    {
-      id: '2',
-      name: 'Design Team',
-      description: 'UI/UX design and user research team',
-      memberCount: 5,
-      projectCount: 2,
-      lastActivity: '1 day ago',
-    },
-    {
-      id: '3',
-      name: 'Marketing Team',
-      description: 'Product marketing and content strategy',
-      memberCount: 4,
-      projectCount: 1,
-      lastActivity: '3 days ago',
-    },
-  ];
+  // Get real teams data from TeamContext
+  const { teams = [], isLoading } = useTeam();
 
   if (isLoading) {
     return (
@@ -72,7 +45,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Teams</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{teams.length}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{teams?.length}</p>
             </div>
           </div>
         </div>
@@ -88,7 +61,7 @@ const DashboardPage: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Projects</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {teams.reduce((total, team) => total + team.projectCount, 0)}
+                {teams?.reduce((total, team) => total + (team.projects?.length || 0), 0) || 0}
               </p>
             </div>
           </div>
@@ -104,7 +77,7 @@ const DashboardPage: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Team Members</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {teams.reduce((total, team) => total + team.memberCount, 0)}
+                {teams?.reduce((total, team) => total + (team.members?.length || 0), 0) || 0}
               </p>
             </div>
           </div>
@@ -117,7 +90,7 @@ const DashboardPage: React.FC = () => {
           Your Teams
         </h2>
 
-        {teams.length === 0 ? (
+        {!teams || teams?.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -135,7 +108,7 @@ const DashboardPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teams.map((team) => (
+            {teams && teams.map((team) => (
               <Link
                 key={team.id}
                 to={`/teams/${team.id}`}
@@ -150,18 +123,18 @@ const DashboardPage: React.FC = () => {
                       {team.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Last activity: {team.lastActivity}
+                      Created: {new Date(team.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
 
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
-                  {team.description}
+                  {team.description || 'No description available'}
                 </p>
 
                 <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                  <span>{team.memberCount} members</span>
-                  <span>{team.projectCount} projects</span>
+                  <span>{team.members?.length || 0} members</span>
+                  <span>{team.projects?.length || 0} projects</span>
                 </div>
               </Link>
             ))}

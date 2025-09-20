@@ -34,7 +34,7 @@ export const teamsApi = {
    * Get all teams for current user
    */
   getTeams: async (): Promise<ApiResponse<Team[]>> => {
-    return apiClient.get<Team[]>('/teams');
+    return apiClient.get<Team[]>('/Teams');
   },
 
   /**

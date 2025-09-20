@@ -1,24 +1,13 @@
 import { Link, useParams } from 'react-router-dom';
+import { useTeam } from '../../context/TeamContext';
 import LoadingIndicator from '../../components/common/LoadingIndicator';
 
 const TeamSettingsPage: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
-  const isLoading = false;
+  const { teams, isLoading } = useTeam();
 
-  // Placeholder team data
-  const team = {
-    id: teamId,
-    name: 'Development Team',
-    description: 'Main development team for web applications and mobile apps',
-    createdAt: '2024-01-15',
-    isPublic: false,
-    allowGuestAccess: false,
-    owner: {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-    },
-  };
+  // Find the current team from teams context
+  const team = teams.find(t => t.id === teamId);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +24,17 @@ const TeamSettingsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <LoadingIndicator size="lg" text="Loading team settings..." />
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Team not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The team you're looking for doesn't exist.</p>
+        </div>
       </div>
     );
   }
@@ -117,7 +117,7 @@ const TeamSettingsPage: React.FC = () => {
                     id="public-team"
                     name="public-team"
                     type="checkbox"
-                    defaultChecked={team.isPublic}
+                    defaultChecked={false}
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
                   <label htmlFor="public-team" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
@@ -130,7 +130,7 @@ const TeamSettingsPage: React.FC = () => {
                     id="guest-access"
                     name="guest-access"
                     type="checkbox"
-                    defaultChecked={team.allowGuestAccess}
+                    defaultChecked={false}
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
                   <label htmlFor="guest-access" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
@@ -216,7 +216,7 @@ const TeamSettingsPage: React.FC = () => {
             <dl className="space-y-3">
               <div>
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Owner</dt>
-                <dd className="text-sm text-gray-900 dark:text-gray-100">{team.owner.name}</dd>
+                <dd className="text-sm text-gray-900 dark:text-gray-100">{team.ownerId}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Created</dt>

@@ -1,56 +1,62 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useProject } from '../../context/ProjectContext';
+import { useTeam } from '../../context/TeamContext';
+import LoadingIndicator from '../../components/common/LoadingIndicator';
+import { ProjectHeader } from '../../components/project';
 
 const ProjectMembersPage: React.FC = () => {
-  const { teamId, projectId } = useParams();
+  const { teamId, projectId } = useParams<{ teamId: string; projectId: string }>();
+  const { projects, fetchProjects, isLoading: projectsLoading } = useProject();
+  const { teams } = useTeam();
 
-  // TODO: Use teamId and projectId for API calls when backend is implemented
-  console.log('Project Members Page - Team ID:', teamId, 'Project ID:', projectId);
+  // Find the current project
+  const project = projects.find(p => p.id === projectId && p.teamId === teamId);
+  const team = teams.find(t => t.id === teamId);
 
-  // Mock members data
-  const members = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'Admin',
-      avatar: 'https://via.placeholder.com/40',
-      joinedDate: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'Member',
-      avatar: 'https://via.placeholder.com/40',
-      joinedDate: '2024-01-20'
-    },
-    {
-      id: '3',
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      role: 'Viewer',
-      avatar: 'https://via.placeholder.com/40',
-      joinedDate: '2024-02-01'
+  // Load projects for this team if not already loaded
+  useEffect(() => {
+    if (teamId && (!projects.some(p => p.teamId === teamId))) {
+      fetchProjects(teamId);
     }
-  ];
+  }, [teamId, projects]); // Removed fetchProjects from dependencies
+
+  if (projectsLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <LoadingIndicator size="lg" text="Loading project members..." />
+      </div>
+    );
+  }
+
+  if (!project || !team) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Project not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The project you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const members = project.members || [];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Project Members
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage project members and permissions
-          </p>
-        </div>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          Invite Member
-        </button>
-      </div>
+    <>
+      {/* Project Header */}
+      <ProjectHeader 
+        project={project} 
+        team={team} 
+        currentTab="members" 
+        pageTitle={`${project.name} Members`}
+        pageDescription="Manage project members and permissions"
+        actionButton={
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Invite Member
+          </button>
+        }
+      />
 
       {/* Members List */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -62,37 +68,37 @@ const ProjectMembersPage: React.FC = () => {
           <div className="space-y-4">
             {members.map((member) => (
               <div
-                key={member.id}
+                key={member.userId}
                 className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
               >
                 <div className="flex items-center space-x-3">
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="w-10 h-10 rounded-full"
-                  />
+                  <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    {member.user.name.charAt(0)}
+                  </div>
                   <div>
                     <h3 className="font-medium text-gray-900 dark:text-white">
-                      {member.name}
+                      {member.user.name}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {member.email}
+                      {member.user.email}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${member.role === 'Admin'
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${member.role === 'owner'
                         ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                        : member.role === 'Member'
+                        : member.role === 'admin'
                           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                          : member.role === 'member'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                       {member.role}
                     </span>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Joined {new Date(member.joinedDate).toLocaleDateString()}
+                      Joined {new Date(member.joinedAt).toLocaleDateString()}
                     </p>
                   </div>
 
@@ -151,7 +157,7 @@ const ProjectMembersPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

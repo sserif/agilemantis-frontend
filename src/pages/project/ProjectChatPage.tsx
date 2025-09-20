@@ -1,191 +1,224 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { useProject } from '../../context/ProjectContext';
+import { useTeam } from '../../context/TeamContext';
 import LoadingIndicator from '../../components/common/LoadingIndicator';
+import { ProjectHeader } from '../../components/project';
+import { ChatBubble, ChatInput } from '../../components/chat';
+import { chatApi } from '../../api/chat';
+import { ChatMessage } from '../../types/project';
+import { ChatResponse } from '../../types/chat';
 
 const ProjectChatPage: React.FC = () => {
   const { teamId, projectId } = useParams<{ teamId: string; projectId: string }>();
-  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [currentThreadId, setCurrentThreadId] = useState<string | undefined>();
+  const [error, setError] = useState<string | undefined>();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { projects, fetchProjects, isLoading: projectsLoading } = useProject();
+  const { teams } = useTeam();
 
-  // Placeholder project data
-  const project = {
-    id: projectId,
-    name: 'Project Alpha',
-  };
+  // Find the current project
+  const project = projects.find(p => p.id === projectId && p.teamId === teamId);
+  const team = teams.find(t => t.id === teamId);
 
-  // Placeholder chat messages
-  const [messages] = useState([
-    {
-      id: '1',
+  // Load projects for this team if not already loaded
+  useEffect(() => {
+    if (teamId && (!projects.some(p => p.teamId === teamId))) {
+      fetchProjects(teamId);
+    }
+  }, [teamId, projects]); // Removed fetchProjects from dependencies
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  // Initialize with welcome message
+  useEffect(() => {
+    if (project && messages.length === 0) {
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        projectId: project.id,
+        userId: 'system',
+        content: `Hello! I'm your AI assistant for the "${project.name}" project. I have access to all your project files and can help you understand the codebase, answer questions, and provide insights. What would you like to know?`,
+        type: 'agent',
+        createdAt: new Date().toISOString(),
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [project, messages.length]);
+
+  const handleSendMessage = async (messageContent: string) => {
+    if (!teamId || !projectId || !messageContent.trim()) return;
+
+    // Create user message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      projectId: projectId,
+      userId: 'current-user', // This would come from auth context in real app
+      content: messageContent.trim(),
       type: 'user',
-      content: 'Can you help me understand the project structure?',
-      timestamp: '10:30 AM',
-      user: 'You',
-    },
-    {
-      id: '2',
-      type: 'ai',
-      content: 'I\'d be happy to help! Based on the files in your project, I can see you have a React application with TypeScript. The main components appear to be organized in a standard structure with separate folders for components, pages, and utilities. Would you like me to explain any specific part in more detail?',
-      timestamp: '10:31 AM',
-      user: 'AI Assistant',
-    },
-    {
-      id: '3',
-      type: 'user',
-      content: 'What files should I look at first to understand the authentication flow?',
-      timestamp: '10:32 AM',
-      user: 'You',
-    },
-    {
-      id: '4',
-      type: 'ai',
-      content: 'For understanding the authentication flow, I recommend starting with these files:\n\n1. `src/context/AuthContext.tsx` - Contains the authentication state management\n2. `src/pages/auth/LoginPage.tsx` - The login component\n3. `src/api/auth.ts` - API calls for authentication\n\nThese files will give you a good overview of how user authentication is handled in the application.',
-      timestamp: '10:33 AM',
-      user: 'AI Assistant',
-    },
-  ]);
+      createdAt: new Date().toISOString(),
+    };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
+    // Add user message to chat
+    setMessages(prev => [...prev, userMessage]);
+    setError(undefined);
     setIsLoading(true);
-    // Simulate AI response
-    setTimeout(() => {
+    setIsTyping(true);
+
+    try {
+      console.log('Sending message to AI:', { teamId, projectId, message: messageContent, threadId: currentThreadId });
+      
+      // Call the chat API
+      const response: ChatResponse = await chatApi.sendMessage(teamId, projectId, {
+        message: messageContent,
+        threadId: currentThreadId,
+      });
+
+      console.log('Chat API response:', response);
+
+      // Validate response structure
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response format from chat API');
+      }
+
+      if (!response.response || !response.threadId) {
+        throw new Error('Missing required fields in chat response');
+      }
+
+      // Update thread ID if this is a new thread
+      if (response.isNewThread || !currentThreadId) {
+        setCurrentThreadId(response.threadId);
+      }
+
+      // Create AI response message
+      const aiMessage: ChatMessage = {
+        id: Date.now().toString() + '_ai',
+        projectId: projectId,
+        userId: 'ai-assistant',
+        content: response.response,
+        type: 'agent',
+        createdAt: response.generatedAt || new Date().toISOString(),
+      };
+
+      // Add AI response to chat
+      setMessages(prev => [...prev, aiMessage]);
+
+    } catch (error: any) {
+      console.error('Failed to send chat message:', error);
+      
+      // Get a user-friendly error message
+      let errorText = 'Sorry, I encountered an error while processing your message. Please try again.';
+      
+      if (error?.message) {
+        if (error.message.includes('Chat endpoint not found')) {
+          errorText = '🚧 The chat feature is not available yet. The backend endpoint may still be in development.';
+        } else if (error.message.includes('permission')) {
+          errorText = 'You don\'t have permission to chat with this project. Please contact your team administrator.';
+        } else if (error.message.includes('Invalid message')) {
+          errorText = 'Invalid message format. Please check your message and try again.';
+        } else {
+          errorText = error.message;
+        }
+      }
+      
+      // Create error message
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString() + '_error',
+        projectId: projectId,
+        userId: 'system',
+        content: errorText,
+        type: 'agent',
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+      setError(errorText);
+    } finally {
       setIsLoading(false);
-      setMessage('');
-    }, 1000);
+      setIsTyping(false);
+    }
   };
 
-  const handleFileAttach = () => {
-    console.log('File attachment - will be implemented in future story');
-  };
+  if (projectsLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <LoadingIndicator size="lg" text="Loading project chat..." />
+      </div>
+    );
+  }
+
+  if (!project || !team) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Project not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The project you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Suggested questions for the sidebar
+  const suggestedQuestions = [
+    'What is the overall architecture of this project?',
+    'How do I run and deploy this project?',
+    'What are the main dependencies and their purposes?',
+    'How is error handling implemented?',
+    'What are the key components and their relationships?',
+    'Are there any security considerations I should know about?',
+  ];
 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {project.name} Chat
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Ask questions about your project files and get AI-powered insights
-            </p>
-          </div>
-
-          {/* Quick Navigation */}
-          <div className="flex space-x-4">
-            <Link
-              to={`/teams/${teamId}/projects/${projectId}`}
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Overview
-            </Link>
-            <Link
-              to={`/teams/${teamId}/projects/${projectId}/chat`}
-              className="px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900 rounded-lg"
-            >
-              Chat
-            </Link>
-            <Link
-              to={`/teams/${teamId}/projects/${projectId}/files`}
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Files
-            </Link>
-          </div>
-        </div>
+      <div className="flex-shrink-0 mb-6">
+        <ProjectHeader 
+          project={project} 
+          team={team} 
+          currentTab="chat" 
+          pageTitle={`${project.name} Chat`}
+          pageDescription="Ask questions about your project files and get AI-powered insights"
+        />
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Main Chat */}
         <div className="flex-1 flex flex-col">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-3xl flex ${msg.type === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3`}>
-                  <div className="flex-shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${msg.type === 'user'
-                      ? 'bg-primary-600'
-                      : 'bg-primary-600'
-                      }`}>
-                      {msg.type === 'user' ? 'Y' : 'AI'}
-                    </div>
-                  </div>
-                  <div className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`px-4 py-2 rounded-lg ${msg.type === 'user'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                      }`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {msg.user} • {msg.timestamp}
-                    </span>
-                  </div>
-                </div>
-              </div>
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-gray-900">
+            {messages.map((message) => (
+              <ChatBubble key={message.id} message={message} />
             ))}
+            
+            {/* Typing Indicator */}
+            {isTyping && (
+              <ChatBubble isTyping={true} />
+            )}
 
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-3xl flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
-                      AI
-                    </div>
-                  </div>
-                  <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
-                    <LoadingIndicator size="sm" text="" />
-                  </div>
-                </div>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded">
+                {error}
               </div>
             )}
+
+            {/* Scroll anchor */}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Area */}
-          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <form onSubmit={handleSendMessage} className="flex space-x-4">
-              <button
-                type="button"
-                onClick={handleFileAttach}
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clipRule="evenodd"></path>
-                </svg>
-              </button>
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ask a question about your project..."
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 pr-12"
-                  disabled={isLoading}
-                />
-                <button
-                  type="submit"
-                  disabled={!message.trim() || isLoading}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:text-gray-400 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                  </svg>
-                </button>
-              </div>
-            </form>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              AI responses are based on your project files and context. File attachment feature coming soon.
-            </p>
-          </div>
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            disabled={!project}
+            placeholder="Ask a question about your project files..."
+          />
         </div>
 
         {/* Sidebar */}
@@ -203,7 +236,7 @@ const ProjectChatPage: React.FC = () => {
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">All project files</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                23 files available for context
+                {project.documents?.length || 0} files available for context
               </p>
             </div>
           </div>
@@ -213,22 +246,33 @@ const ProjectChatPage: React.FC = () => {
               Suggested Questions
             </h4>
             <div className="space-y-2">
-              {[
-                'What is the overall architecture?',
-                'How do I run this project?',
-                'What are the main dependencies?',
-                'How is error handling implemented?',
-              ].map((question, index) => (
+              {suggestedQuestions.map((question, index) => (
                 <button
                   key={index}
-                  onClick={() => setMessage(question)}
-                  className="w-full text-left p-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white dark:hover:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                  onClick={() => handleSendMessage(question)}
+                  disabled={isLoading}
+                  className="w-full text-left p-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white dark:hover:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {question}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Thread Info */}
+          {currentThreadId && (
+            <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
+              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                Active Conversation
+              </h4>
+              <p className="text-xs text-blue-700 dark:text-blue-200">
+                Thread ID: {currentThreadId.slice(-8)}...
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                {messages.length} messages in this conversation
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

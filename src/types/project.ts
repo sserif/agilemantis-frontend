@@ -7,7 +7,7 @@ export interface Project {
   teamId: string;
   ownerId: string;
   members: ProjectMember[];
-  files: ProjectFile[];
+  documents: ProjectDocument[];
   agentContext: AgentContext;
   createdAt: string;
   updatedAt: string;
@@ -20,7 +20,7 @@ export interface ProjectMember {
   joinedAt: string;
 }
 
-export type ProjectRole = 'owner' | 'contributor' | 'reader';
+export type ProjectRole = 'owner' | 'admin' | 'member' | 'viewer';
 
 export interface ProjectFile {
   id: string;
@@ -30,6 +30,19 @@ export interface ProjectFile {
   url: string;
   uploadedBy: string;
   uploadedAt: string;
+}
+
+export interface ProjectDocument {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  content?: string;
+  metadata?: Record<string, any>;
+  processingStatus?: 'processing' | 'failed' | 'completed';
 }
 
 export interface AgentContext {

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Project } from '../types/project';
+import { Project, ProjectDocument } from '../types/project';
 import { User } from '../types/user';
 import { ApiResponse } from './client';
 
@@ -24,16 +24,6 @@ export interface ProjectMember {
   joinedAt: string;
 }
 
-export interface ProjectFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  uploadedAt: string;
-  uploadedBy: string;
-  url: string;
-}
-
 export interface ChatMessage {
   id: string;
   content: string;
@@ -54,35 +44,35 @@ export const projectsApi = {
    * Get all projects for a team
    */
   getProjects: async (teamId: string): Promise<ApiResponse<Project[]>> => {
-    return apiClient.get<Project[]>(`/teams/${teamId}/projects`);
+    return apiClient.get<Project[]>(`/Teams/${teamId}/Projects`);
   },
 
   /**
    * Get project by ID
    */
   getProject: async (teamId: string, projectId: string): Promise<ApiResponse<Project>> => {
-    return apiClient.get<Project>(`/teams/${teamId}/projects/${projectId}`);
+    return apiClient.get<Project>(`/Teams/${teamId}/Projects/${projectId}`);
   },
 
   /**
    * Create new project
    */
   createProject: async (projectData: CreateProjectData): Promise<ApiResponse<Project>> => {
-    return apiClient.post<Project>(`/teams/${projectData.teamId}/projects`, projectData);
+    return apiClient.post<Project>(`/Teams/${projectData.teamId}/Projects`, projectData);
   },
 
   /**
    * Update project
    */
   updateProject: async (teamId: string, projectId: string, projectData: UpdateProjectData): Promise<ApiResponse<Project>> => {
-    return apiClient.put<Project>(`/teams/${teamId}/projects/${projectId}`, projectData);
+    return apiClient.put<Project>(`/Teams/${teamId}/Projects/${projectId}`, projectData);
   },
 
   /**
    * Delete project
    */
   deleteProject: async (teamId: string, projectId: string): Promise<ApiResponse<void>> => {
-    return apiClient.delete<void>(`/teams/${teamId}/projects/${projectId}`);
+    return apiClient.delete<void>(`/Teams/${teamId}/Projects/${projectId}`);
   },
 
   /**
@@ -114,24 +104,24 @@ export const projectsApi = {
   },
 
   /**
-   * Get project files
+   * Get project documents
    */
-  getProjectFiles: async (teamId: string, projectId: string): Promise<ApiResponse<ProjectFile[]>> => {
-    return apiClient.get<ProjectFile[]>(`/teams/${teamId}/projects/${projectId}/files`);
+  getProjectDocuments: async (teamId: string, projectId: string): Promise<ApiResponse<ProjectDocument[]>> => {
+    return apiClient.get<ProjectDocument[]>(`/teams/${teamId}/projects/${projectId}/documents`);
   },
 
   /**
-   * Upload file to project
+   * Upload document to project
    */
-  uploadFile: async (teamId: string, projectId: string, file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<ProjectFile>> => {
-    return apiClient.upload<ProjectFile>(`/teams/${teamId}/projects/${projectId}/files`, file, onProgress);
+  uploadDocument: async (teamId: string, projectId: string, file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<ProjectDocument>> => {
+    return apiClient.upload<ProjectDocument>(`/teams/${teamId}/projects/${projectId}/documents`, file, onProgress);
   },
 
   /**
-   * Delete file from project
+   * Delete document from project
    */
-  deleteFile: async (teamId: string, projectId: string, fileId: string): Promise<ApiResponse<void>> => {
-    return apiClient.delete<void>(`/teams/${teamId}/projects/${projectId}/files/${fileId}`);
+  deleteDocument: async (teamId: string, projectId: string, fileId: string): Promise<ApiResponse<void>> => {
+    return apiClient.delete<void>(`/teams/${teamId}/projects/${projectId}/documents/${fileId}`);
   },
 
   /**

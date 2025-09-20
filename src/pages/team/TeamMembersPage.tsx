@@ -1,56 +1,13 @@
 import { Link, useParams } from 'react-router-dom';
+import { useTeam } from '../../context/TeamContext';
 import LoadingIndicator from '../../components/common/LoadingIndicator';
 
 const TeamMembersPage: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
-  const isLoading = false;
+  const { teams, isLoading } = useTeam();
 
-  // Placeholder team data
-  const team = {
-    id: teamId,
-    name: 'Development Team',
-    memberCount: 8,
-  };
-
-  // Placeholder members data
-  const members = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'owner',
-      joinedAt: '2024-01-15',
-      picture: null,
-      status: 'active',
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'member',
-      joinedAt: '2024-02-01',
-      picture: null,
-      status: 'active',
-    },
-    {
-      id: '3',
-      name: 'Mike Johnson',
-      email: 'mike@example.com',
-      role: 'member',
-      joinedAt: '2024-02-15',
-      picture: null,
-      status: 'active',
-    },
-    {
-      id: '4',
-      name: 'Sarah Wilson',
-      email: 'sarah@example.com',
-      role: 'member',
-      joinedAt: '2024-03-01',
-      picture: null,
-      status: 'pending',
-    },
-  ];
+  // Find the current team from teams context
+  const team = teams.find(t => t.id === teamId);
 
   if (isLoading) {
     return (
@@ -60,6 +17,19 @@ const TeamMembersPage: React.FC = () => {
     );
   }
 
+  if (!team) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Team not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The team you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const members = team.members || [];
+
   const getRoleBadge = (role: string) => {
     const roleConfig = {
       owner: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200',
@@ -67,15 +37,6 @@ const TeamMembersPage: React.FC = () => {
     };
 
     return roleConfig[role as keyof typeof roleConfig] || roleConfig.member;
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      active: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
-      pending: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
-    };
-
-    return statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
   };
 
   return (
@@ -127,7 +88,7 @@ const TeamMembersPage: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Members</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {members.filter(m => m.status === 'active').length}
+                {members.length}
               </p>
             </div>
           </div>
@@ -141,9 +102,9 @@ const TeamMembersPage: React.FC = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Invites</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Team Owners</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {members.filter(m => m.status === 'pending').length}
+                {members.filter(m => m.role === 'owner').length}
               </p>
             </div>
           </div>
@@ -195,20 +156,20 @@ const TeamMembersPage: React.FC = () => {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {members.map((member) => (
-                <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr key={member.userId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
                         <div className="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
-                          {member.name.split(' ').map(n => n.charAt(0)).join('')}
+                          {member.user.name.split(' ').map((n: string) => n.charAt(0)).join('')}
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {member.name}
+                          {member.user.name}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {member.email}
+                          {member.user.email}
                         </div>
                       </div>
                     </div>
@@ -219,8 +180,8 @@ const TeamMembersPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(member.status)}`}>
-                      {member.status}
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                      active
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
