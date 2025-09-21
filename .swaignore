@@ -1,48 +1,47 @@
 # Azure Static Web Apps ignore file
 # Files and directories to exclude from deployment
 
-# Development files
+# Source code (not needed in production)
 src/
+
+# Development and build tools
 .github/
 .vscode/
-*.log
-*.lock
-
-# Dependencies (will be installed during build)
 node_modules/
 
 # Build cache and temporary files
 .cache/
 .temp/
 .tmp/
-dist/
+
+# Development files
+*.log
 
 # Environment files (secrets should be configured in Azure)
 .env*
 !.env.example
 
-# Documentation
+# Documentation (except main README)
 *.md
 !README.md
 
-# Configuration files
+# Configuration files (not needed in production)
 tsconfig*.json
 vite.config.ts
 tailwind.config.js
 postcss.config.js
 eslint.config.js
 jest.config.js
+package.json
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
 
 # Test files
 **/*.test.*
 **/*.spec.*
 __tests__/
 coverage/
-
-# Package files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
 
 # OS generated files
 .DS_Store
@@ -52,3 +51,6 @@ pnpm-lock.yaml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Keep only the built assets in dist/
+# Everything else should be excluded
