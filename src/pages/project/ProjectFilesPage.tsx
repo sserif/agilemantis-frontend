@@ -5,7 +5,6 @@ import { useTeam } from '../../context/TeamContext';
 import { documentsApi } from '../../api/documents';
 import LoadingIndicator from '../../components/common/LoadingIndicator';
 import { StatusIndicator } from '../../components/common/StatusIndicator';
-import { useDocumentStatusPolling } from '../../hooks/useDocumentStatusPolling';
 import { ProjectDocument } from '../../types/project';
 import { ProjectHeader } from '../../components/project';
 
@@ -17,7 +16,7 @@ const ProjectFilesPage: React.FC = () => {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-  const [pollingDocuments, setPollingDocuments] = useState<Set<string>>(new Set());
+  const [, setPollingDocuments] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { projects, fetchProjects, isLoading: projectsLoading } = useProject();
   const { teams } = useTeam();
