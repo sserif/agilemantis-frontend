@@ -31,7 +31,7 @@ jobs:
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "/" # Point to the source code root
           api_location: "" # Api source code path - optional
-          output_location: "dist-${{ github.run_id }}" # Unique output directory for each build
+          output_location: "dist" # Built app content directory - where Vite outputs the build
           ###### End of Repository/Build Configurations ######
         env:
           # Azure Oryx Build Configuration - Multiple ways to specify Node.js 20
