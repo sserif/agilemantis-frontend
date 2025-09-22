@@ -32,7 +32,11 @@ jobs:
       - name: Build application
         run: |
           yarn build
-          cp public/staticwebapp.config.json dist/
+          cp public/staticwebapp.config.json dist/staticwebapp.config.json
+          echo "Contents of dist after build:"
+          ls -la dist/
+          echo "Content of staticwebapp.config.json:"
+          cat dist/staticwebapp.config.json
         env:
           CI: true
           # Core Application Variables
