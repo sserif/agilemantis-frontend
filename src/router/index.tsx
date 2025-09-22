@@ -26,10 +26,6 @@ const NotFoundPage = lazy(() => import('../pages/notfound/NotFoundPage'));
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <Navigate to="/dashboard" replace />,
-  },
-  {
     path: '/login',
     element: <LoginPage />,
   },
@@ -45,6 +41,10 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      {
+        index: true,
+        element: <Navigate to="/dashboard" replace />,
+      },
       {
         path: 'dashboard',
         element: <DashboardPage />,
