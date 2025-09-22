@@ -34,8 +34,10 @@ jobs:
           output_location: "dist-${{ github.run_id }}" # Unique output directory for each build
           ###### End of Repository/Build Configurations ######
         env:
-          # Azure Oryx Build Configuration
+          # Azure Oryx Build Configuration - Multiple ways to specify Node.js 20
           ORYX_NODE_VERSION: "20"
+          NODE_VERSION: "20"
+          WEBSITE_NODE_DEFAULT_VERSION: "20.x"
           
           # Core Application Variables
           VITE_APP_TITLE: Agile Mantis - Production
