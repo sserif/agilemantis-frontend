@@ -20,25 +20,21 @@ jobs:
           submodules: true
           lfs: false
       
-      - name: Build And Deploy
-        id: builddeploy
-        uses: Azure/static-web-apps-deploy@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_SKY_0218F331E }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
-          action: "upload"
-          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "/" # Point to the source code root
-          api_location: "" # Api source code path - optional
-          output_location: "dist" # Built app content directory - where Vite outputs the build
-          ###### End of Repository/Build Configurations ######
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Build application
+        run: |
+          yarn build
+          cp public/staticwebapp.config.json dist/
         env:
-          # Azure Oryx Build Configuration - Multiple ways to specify Node.js 20
-          ORYX_NODE_VERSION: "20"
-          NODE_VERSION: "20"
-          WEBSITE_NODE_DEFAULT_VERSION: "20.x"
-          
+          CI: true
           # Core Application Variables
           VITE_APP_TITLE: Agile Mantis - Production
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
@@ -52,6 +48,21 @@ jobs:
           # Production Settings
           VITE_ENVIRONMENT: production
           VITE_LOG_LEVEL: info
+          
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_SKY_0218F331E }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          action: "upload"
+          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
+          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
+          app_location: "/dist" # Point directly to built files
+          api_location: "" # Api source code path - optional
+          output_location: "." # Built app content directory - current directory since we're already in dist
+          skip_app_build: true # We already built the app above
+          ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
