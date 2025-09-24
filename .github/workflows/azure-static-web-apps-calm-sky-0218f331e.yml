@@ -46,7 +46,7 @@ jobs:
           # Auth0 Configuration
           VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
           VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-          VITE_AUTH0_REDIRECT_URI: https://calm-sky-0218f331e.2.azurestaticapps.net/callback
+          VITE_AUTH0_REDIRECT_URI: https://agilemantis.ai/callback
           
           # Production Settings
           VITE_ENVIRONMENT: production
