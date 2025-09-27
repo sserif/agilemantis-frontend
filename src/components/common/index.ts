@@ -8,4 +8,5 @@ export { default as TextArea } from './TextArea.tsx';
 export { default as Modal } from './Modal.tsx';
 export { StatusIndicator } from './StatusIndicator';
 export { default as TypingIndicator } from './TypingIndicator';
+export { default as TokenRefreshIndicator } from './TokenRefreshIndicator.tsx';
 export { default as MarkdownRenderer } from './MarkdownRenderer';

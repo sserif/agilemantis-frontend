@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar, Sidebar } from './';
+import TokenRefreshIndicator from '../common/TokenRefreshIndicator';
 
 const AppLayout: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -21,6 +22,9 @@ const AppLayout: React.FC = () => {
           </div>
         </main>
       </div>
+      
+      {/* Token Refresh Indicator */}
+      <TokenRefreshIndicator />
     </div>
   );
 };

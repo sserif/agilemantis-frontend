@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { Auth0Provider, useAuth0 as useAuth0Hook, Auth0ProviderOptions } from '@auth0/auth0-react';
+import { setAuth0Instance } from '../api/auth-utils';
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN;
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
@@ -34,6 +35,9 @@ interface Auth0ContextType {
   logout: () => void;
   getAccessTokenSilently: () => Promise<string>;
 }
+
+// Export the type for use in other files
+export type { Auth0ContextType };
 
 const Auth0Context = createContext<Auth0ContextType | undefined>(undefined);
 
@@ -112,6 +116,13 @@ const Auth0ContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     logout: () => logout({ logoutParams: { returnTo: window.location.origin } }),
     getAccessTokenSilently,
   };
+
+  // Register this Auth0 instance for use in API interceptors
+  React.useEffect(() => {
+    if (!isLoading) {
+      setAuth0Instance(value);
+    }
+  }, [isLoading, value]);
 
   return <Auth0Context.Provider value={value}>{children}</Auth0Context.Provider>;
 };

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { refreshAuthToken } from './auth-utils';
 import { env } from '../utils/env';
 
 // API Response interface
@@ -89,26 +90,48 @@ axiosInstance.interceptors.response.use(
 
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    
     console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
       status: error.response?.status,
       message: error.message,
       data: error.response?.data,
     });
 
-    // Handle different error scenarios
+    // Handle authentication errors with automatic token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      console.log('🔄 401 error detected, attempting token refresh...');
+      
+      try {
+        const newToken = await refreshAuthToken();
+        
+        if (newToken) {
+          // Update the authorization header and retry the request
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          console.log('🔁 Retrying original request with new token...');
+          
+          return axiosInstance(originalRequest);
+        } else {
+          console.log('❌ Token refresh failed, user will be redirected to login');
+          return Promise.reject(error);
+        }
+      } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError);
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Handle different error scenarios for non-401 errors
     if (error.response) {
       // Server responded with error status
       const { status, data } = error.response;
 
-      // Handle authentication errors
-      if (status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-
-        // Dispatch logout event
-        window.dispatchEvent(new CustomEvent('auth:logout'));
+      // Handle other authentication errors (403, etc.)
+      if (status === 403) {
+        console.warn('🚫 Access forbidden - user may not have sufficient permissions');
       }
 
       // Create custom error
