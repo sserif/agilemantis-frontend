@@ -21,8 +21,7 @@ const auth0Config: Auth0ProviderOptions = {
   authorizationParams: {
     redirect_uri: redirectUri,
     scope: 'openid profile email',
-    prompt: 'select_account', // This enables Auth0's organization selection UI
-    organization: 'prompt', // This tells Auth0 to prompt for organization selection
+    // Organization prompting is handled by Auth0 Dashboard settings
     ...(audience && { audience: audience }),
   },
   cacheLocation: 'localstorage',
